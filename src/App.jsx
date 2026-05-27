@@ -397,21 +397,30 @@ export default function App() {
       <header className="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] border-b border-blue-900">
         <div className="max-w-6xl mx-auto px-6 py-10 flex justify-between">
           <div className="flex gap-5">
-            <div className="w-16 h-16 rounded-2xl border border-blue-500 bg-[#0f172a] flex items-center justify-center">
-              <Shield className="text-blue-400" size={34} />
-            </div>
+           <div className="w-24 h-24 rounded-2xl overflow-hidden border border-blue-500 bg-[#0f172a] flex items-center justify-center shadow-2xl shadow-blue-900/40">
+  <img
+    src="/lspd-badge.png"
+    alt="LSPD Badge"
+    className="w-full h-full object-contain p-2"
+  />
+</div>
 
             <div>
-              <p className="uppercase tracking-[6px] text-blue-300 text-sm">
-                Los Santos Police Department
-              </p>
-              <h1 className="text-5xl font-bold mt-2">
-                LSPD Department Portal
-              </h1>
-              <p className="text-gray-300 mt-4">
-                Serving Los Santos with professionalism, integrity, and dedication.
-              </p>
-            </div>
+            <p className="uppercase tracking-[8px] text-blue-400 text-sm font-semibold">
+  LOS SANTOS POLICE DEPARTMENT
+</p>
+
+<h1 className="text-6xl font-black mt-2 leading-none tracking-tight">
+  LSPD PORTAL
+</h1>
+
+<div className="flex items-center gap-3 mt-4">
+  <div className="w-16 h-[2px] bg-blue-500"></div>
+
+  <p className="text-gray-300 text-lg tracking-wide">
+    Professional Law Enforcement Management System
+  </p>
+</div>
           </div>
 
           {accessLevel !== 'public' && (
