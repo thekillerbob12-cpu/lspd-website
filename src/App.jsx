@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Shield, Info, FileText, Mail, Lock, Users, Trash2, ClipboardCheck } from 'lucide-react'
+import {
+  Shield,
+  Info,
+  FileText,
+  Mail,
+  Lock,
+  Users,
+  Trash2,
+  ClipboardCheck
+} from 'lucide-react'
 import { supabase } from './supabase'
 
 export default function App() {
@@ -27,6 +36,11 @@ export default function App() {
     loadOfficers()
   }, [])
 
+  function showMessage(text) {
+    setMessage(text)
+    setTimeout(() => setMessage(''), 4000)
+  }
+
   async function loadOfficers() {
     const { data, error } = await supabase
       .from('officers')
@@ -41,6 +55,7 @@ export default function App() {
       setAccessLevel('officer')
       setPage('monthly')
       setPassword('')
+      showMessage('Officer access granted.')
       return
     }
 
@@ -48,16 +63,18 @@ export default function App() {
       setAccessLevel('supervisor')
       setPage('roster')
       setPassword('')
+      showMessage('Supervisor access granted.')
       return
     }
 
-    alert('Incorrect password')
+    showMessage('Incorrect password.')
   }
 
   function logout() {
     setAccessLevel('public')
     setPage('about')
     setPassword('')
+    showMessage('Logged out.')
   }
 
   function canAccessOfficerPages() {
@@ -71,6 +88,11 @@ export default function App() {
   async function addOfficer(e) {
     e.preventDefault()
 
+    if (!newOfficer.full_name || !newOfficer.callsign || !newOfficer.rank) {
+      showMessage('Please complete all officer fields.')
+      return
+    }
+
     const { error } = await supabase.from('officers').insert({
       full_name: newOfficer.full_name,
       callsign: newOfficer.callsign,
@@ -81,22 +103,24 @@ export default function App() {
     })
 
     if (error) {
-      setMessage(error.message)
+      showMessage(error.message)
       return
     }
 
     setNewOfficer({ full_name: '', callsign: '', rank: '' })
-    setMessage('Officer added and marked Active.')
+    showMessage('Officer added and marked Active.')
     loadOfficers()
   }
 
   async function removeOfficer(id) {
     await supabase.from('officers').delete().eq('id', id)
+    showMessage('Officer removed.')
     loadOfficers()
   }
 
   async function updateStatus(id, status) {
     await supabase.from('officers').update({ status }).eq('id', id)
+    showMessage('Status updated.')
     loadOfficers()
   }
 
@@ -108,7 +132,7 @@ export default function App() {
     )
 
     if (!officer) {
-      setMessage('No officer found with that callsign.')
+      showMessage('No officer found with that callsign.')
       return
     }
 
@@ -121,7 +145,7 @@ export default function App() {
     })
 
     if (error) {
-      setMessage(error.message)
+      showMessage(error.message)
       return
     }
 
@@ -141,7 +165,7 @@ export default function App() {
       submission_month: new Date().toISOString().slice(0, 7),
     })
 
-    setMessage('Monthly activity check submitted.')
+    showMessage('Monthly activity check submitted.')
     loadOfficers()
   }
 
@@ -170,15 +194,25 @@ export default function App() {
             <div className="w-16 h-16 rounded-2xl border border-blue-500 bg-[#0f172a] flex items-center justify-center">
               <Shield className="text-blue-400" size={34} />
             </div>
+
             <div>
-              <p className="uppercase tracking-[6px] text-blue-300 text-sm">Los Santos Police Department</p>
-              <h1 className="text-5xl font-bold mt-2">LSPD Department Portal</h1>
-              <p className="text-gray-300 mt-4">Serving Los Santos with professionalism, integrity, and dedication.</p>
+              <p className="uppercase tracking-[6px] text-blue-300 text-sm">
+                Los Santos Police Department
+              </p>
+              <h1 className="text-5xl font-bold mt-2">
+                LSPD Department Portal
+              </h1>
+              <p className="text-gray-300 mt-4">
+                Serving Los Santos with professionalism, integrity, and dedication.
+              </p>
             </div>
           </div>
 
           {accessLevel !== 'public' && (
-            <button onClick={logout} className="border border-red-700 px-5 py-3 rounded-xl">
+            <button
+              onClick={logout}
+              className="border border-red-700 px-5 py-3 rounded-xl h-fit"
+            >
               Logout
             </button>
           )}
@@ -187,7 +221,9 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-6 py-8 grid md:grid-cols-[260px_1fr] gap-6">
         <nav className="bg-[#061126] border border-[#13203a] rounded-2xl p-5">
-          <p className="text-xs tracking-[4px] text-blue-300 uppercase mb-6">Navigation</p>
+          <p className="text-xs tracking-[4px] text-blue-300 uppercase mb-6">
+            Navigation
+          </p>
 
           <Nav icon={<Info />} text="About Us" active={page === 'about'} onClick={() => setPage('about')} />
           <Nav icon={<FileText />} text="Apply Here" active={page === 'apply'} onClick={() => setPage('apply')} />
@@ -216,12 +252,19 @@ export default function App() {
         </nav>
 
         <section className="bg-[#061126] border border-[#13203a] rounded-2xl p-6">
-          {message && <div className="mb-4 border border-blue-700 rounded-xl p-3 text-blue-200">{message}</div>}
+          {message && (
+            <div className="mb-4 border border-blue-700 rounded-xl p-3 text-blue-200">
+              {message}
+            </div>
+          )}
 
           {page === 'about' && (
             <>
               <h2 className="text-4xl font-bold mb-4">About Us</h2>
-              <p className="text-gray-300 mb-8">The Los Santos Police Department is committed to protecting the city and maintaining professional roleplay standards.</p>
+              <p className="text-gray-300 mb-8">
+                The Los Santos Police Department is committed to protecting the city and maintaining professional roleplay standards.
+              </p>
+
               <div className="grid md:grid-cols-3 gap-5">
                 <Card title="Mission" text="Provide fair, realistic, and professional law enforcement roleplay." />
                 <Card title="Values" text="Integrity, discipline, accountability, teamwork, and respect." />
@@ -247,6 +290,7 @@ export default function App() {
           {page === 'login' && (
             <>
               <h2 className="text-4xl font-bold mb-4">Department Login</h2>
+
               <input
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -254,21 +298,34 @@ export default function App() {
                 placeholder="Password"
                 className="input max-w-md mb-4"
               />
-              <button onClick={login} className="block bg-blue-600 px-6 py-3 rounded-xl">Login</button>
-              <p className="text-gray-400 mt-4">Officer: lspd123 | Supervisor: admin123</p>
+
+              <button
+                onClick={login}
+                className="block bg-blue-600 px-6 py-3 rounded-xl"
+              >
+                Login
+              </button>
+
+              <p className="text-gray-400 mt-4">
+                Officer: lspd123 | Supervisor: admin123
+              </p>
             </>
           )}
 
           {page === 'monthly' && canAccessOfficerPages() && (
             <>
               <h2 className="text-4xl font-bold mb-6">Monthly Activity Check</h2>
+
               <form onSubmit={submitMonthlyCheck} className="grid gap-4">
                 <input placeholder="Callsign" value={monthlyForm.callsign} onChange={e => setMonthlyForm({ ...monthlyForm, callsign: e.target.value })} className="input" />
                 <input placeholder="Patrol Hours" type="number" value={monthlyForm.patrol_hours} onChange={e => setMonthlyForm({ ...monthlyForm, patrol_hours: e.target.value })} className="input" />
                 <input placeholder="Supervisor" value={monthlyForm.supervisor} onChange={e => setMonthlyForm({ ...monthlyForm, supervisor: e.target.value })} className="input" />
                 <input type="month" value={monthlyForm.submission_month} onChange={e => setMonthlyForm({ ...monthlyForm, submission_month: e.target.value })} className="input" />
                 <textarea placeholder="Activity Summary" value={monthlyForm.activity_summary} onChange={e => setMonthlyForm({ ...monthlyForm, activity_summary: e.target.value })} className="input min-h-32" />
-                <button className="bg-blue-600 px-6 py-3 rounded-xl">Submit Monthly Check</button>
+
+                <button className="bg-blue-600 px-6 py-3 rounded-xl">
+                  Submit Monthly Check
+                </button>
               </form>
             </>
           )}
@@ -276,7 +333,9 @@ export default function App() {
           {page === 'forms' && canAccessOfficerPages() && (
             <>
               <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
-              <p className="text-gray-300 mb-6">Select a department form below. Replace each link with your actual Google Doc, Google Form, PDF, or policy document.</p>
+              <p className="text-gray-300 mb-6">
+                Select a department form below. Replace each link with your actual Google Doc, Google Form, PDF, or policy document.
+              </p>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {departmentForms.map(form => (
@@ -303,7 +362,10 @@ export default function App() {
                 <input placeholder="Full Name" value={newOfficer.full_name} onChange={e => setNewOfficer({ ...newOfficer, full_name: e.target.value })} className="input" />
                 <input placeholder="Callsign" value={newOfficer.callsign} onChange={e => setNewOfficer({ ...newOfficer, callsign: e.target.value })} className="input" />
                 <input placeholder="Rank" value={newOfficer.rank} onChange={e => setNewOfficer({ ...newOfficer, rank: e.target.value })} className="input" />
-                <button className="bg-blue-600 rounded-xl">Add Officer</button>
+
+                <button className="bg-blue-600 rounded-xl">
+                  Add Officer
+                </button>
               </form>
 
               <div className="space-y-4">
@@ -341,9 +403,14 @@ export default function App() {
 
 function Nav({ icon, text, active, onClick }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl mb-3 ${active ? 'bg-blue-600' : 'hover:bg-[#0f172a] text-gray-300'}`}>
-      {icon}
-      {text}
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl mb-3 text-left ${
+        active ? 'bg-blue-600 text-white' : 'hover:bg-[#0f172a] text-gray-300'
+      }`}
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="text-left leading-tight">{text}</span>
     </button>
   )
 }
