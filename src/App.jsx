@@ -192,9 +192,17 @@ export default function App() {
     return accessLevel === 'supervisor'
   }
 
+  function isProtectedStatus(status) {
+    return protectedStatuses.includes(status)
+  }
+
   function displayStatus(officer) {
-    if (protectedStatuses.includes(officer.status)) {
+    if (isProtectedStatus(officer.status)) {
       return officer.status
+    }
+
+    if (officer.status === 'Inactive') {
+      return 'Inactive'
     }
 
     return officer.monthly_activity_completed ? 'Active' : 'Inactive'
@@ -282,6 +290,22 @@ export default function App() {
     loadAllData()
   }
 
+  async function updateOfficerStatus(officer, newStatus) {
+    const updates = { status: newStatus }
+
+    if (newStatus === 'Active') {
+      updates.monthly_activity_completed = true
+      updates.last_activity_check = new Date().toISOString()
+    }
+
+    if (newStatus === 'Inactive') {
+      updates.monthly_activity_completed = false
+      updates.last_activity_check = null
+    }
+
+    await updateOfficer(officer.id, updates)
+  }
+
   async function startNewMonth() {
     const month = new Date().toISOString().slice(0, 7)
 
@@ -296,13 +320,14 @@ export default function App() {
     }
 
     const resettableOfficerIds = officers
-      .filter(officer => !protectedStatuses.includes(officer.status))
+      .filter(officer => !isProtectedStatus(officer.status))
       .map(officer => officer.id)
 
     if (resettableOfficerIds.length > 0) {
       const { error: resetError } = await supabase
         .from('officers')
         .update({
+          status: 'Inactive',
           monthly_activity_completed: false,
           last_activity_check: null,
         })
@@ -349,6 +374,7 @@ export default function App() {
     await supabase
       .from('officers')
       .update({
+        status: 'Active',
         monthly_activity_completed: true,
         last_activity_check: new Date().toISOString(),
       })
@@ -649,8 +675,9 @@ export default function App() {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          <select value={officer.status} onChange={e => updateOfficer(officer.id, { status: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          <select value={officer.status} onChange={e => updateOfficerStatus(officer, e.target.value)} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
                             <option>Active</option>
+                            <option>Inactive</option>
                             <option>LOA</option>
                             <option>VACANT</option>
                             <option>Suspended</option>
