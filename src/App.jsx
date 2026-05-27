@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Shield, Info, FileText, Mail, Lock, Users, UserPlus, Trash2 } from 'lucide-react'
+import { Shield, Info, FileText, Mail, Lock, Users, Trash2, ClipboardCheck } from 'lucide-react'
 import { supabase } from './supabase'
 
 export default function App() {
   const [page, setPage] = useState('about')
   const [officers, setOfficers] = useState([])
-  const [loggedIn, setLoggedIn] = useState(false)
-  const [admin, setAdmin] = useState(false)
+  const [accessLevel, setAccessLevel] = useState('public')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
 
@@ -34,30 +33,39 @@ export default function App() {
       .select('*')
       .order('created_at', { ascending: true })
 
-    console.log('SUPABASE DATA:', data)
-    console.log('SUPABASE ERROR:', error)
-
     if (!error && data) setOfficers(data)
   }
 
   function login() {
     if (password === 'lspd123') {
-      setLoggedIn(true)
-      setAdmin(false)
-      setPage('forms')
+      setAccessLevel('officer')
+      setPage('monthly')
       setPassword('')
       return
     }
 
     if (password === 'admin123') {
-      setLoggedIn(true)
-      setAdmin(true)
+      setAccessLevel('supervisor')
       setPage('roster')
       setPassword('')
       return
     }
 
     alert('Incorrect password')
+  }
+
+  function logout() {
+    setAccessLevel('public')
+    setPage('about')
+    setPassword('')
+  }
+
+  function canAccessOfficerPages() {
+    return accessLevel === 'officer' || accessLevel === 'supervisor'
+  }
+
+  function canAccessRoster() {
+    return accessLevel === 'supervisor'
   }
 
   async function addOfficer(e) {
@@ -145,6 +153,15 @@ export default function App() {
     return officer.monthly_activity_completed ? 'Active' : 'Inactive'
   }
 
+  const departmentForms = [
+    { title: 'Incident Report', url: 'https://docs.google.com/' },
+    { title: 'Arrest Report', url: 'https://docs.google.com/' },
+    { title: 'Use of Force Report', url: 'https://docs.google.com/' },
+    { title: 'Leave of Absence Request', url: 'https://docs.google.com/' },
+    { title: 'Ride Along Request', url: 'https://docs.google.com/' },
+    { title: 'Complaint Form', url: 'https://docs.google.com/' },
+  ]
+
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       <header className="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] border-b border-blue-900">
@@ -159,8 +176,9 @@ export default function App() {
               <p className="text-gray-300 mt-4">Serving Los Santos with professionalism, integrity, and dedication.</p>
             </div>
           </div>
-          {loggedIn && (
-            <button onClick={() => { setLoggedIn(false); setAdmin(false); setPage('about') }} className="border border-red-700 px-5 py-3 rounded-xl">
+
+          {accessLevel !== 'public' && (
+            <button onClick={logout} className="border border-red-700 px-5 py-3 rounded-xl">
               Logout
             </button>
           )}
@@ -170,11 +188,31 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-6 py-8 grid md:grid-cols-[260px_1fr] gap-6">
         <nav className="bg-[#061126] border border-[#13203a] rounded-2xl p-5">
           <p className="text-xs tracking-[4px] text-blue-300 uppercase mb-6">Navigation</p>
+
           <Nav icon={<Info />} text="About Us" active={page === 'about'} onClick={() => setPage('about')} />
           <Nav icon={<FileText />} text="Apply Here" active={page === 'apply'} onClick={() => setPage('apply')} />
           <Nav icon={<Mail />} text="Contact Us" active={page === 'contact'} onClick={() => setPage('contact')} />
-          <Nav icon={<Lock />} text="Department Forms" active={page === 'forms'} onClick={() => loggedIn ? setPage('forms') : setPage('login')} />
-          <Nav icon={<Users />} text="Master Roster" active={page === 'roster'} onClick={() => admin ? setPage('roster') : setPage('login')} />
+
+          <Nav
+            icon={<ClipboardCheck />}
+            text="Monthly Activity Check"
+            active={page === 'monthly'}
+            onClick={() => canAccessOfficerPages() ? setPage('monthly') : setPage('login')}
+          />
+
+          <Nav
+            icon={<Lock />}
+            text="Department Forms"
+            active={page === 'forms'}
+            onClick={() => canAccessOfficerPages() ? setPage('forms') : setPage('login')}
+          />
+
+          <Nav
+            icon={<Users />}
+            text="Master Roster"
+            active={page === 'roster'}
+            onClick={() => canAccessRoster() ? setPage('roster') : setPage('login')}
+          />
         </nav>
 
         <section className="bg-[#061126] border border-[#13203a] rounded-2xl p-6">
@@ -208,14 +246,20 @@ export default function App() {
 
           {page === 'login' && (
             <>
-              <h2 className="text-4xl font-bold mb-4">Login</h2>
-              <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" className="w-full max-w-md bg-[#020617] border border-blue-900 rounded-xl px-4 py-3 mb-4" />
+              <h2 className="text-4xl font-bold mb-4">Department Login</h2>
+              <input
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                type="password"
+                placeholder="Password"
+                className="input max-w-md mb-4"
+              />
               <button onClick={login} className="block bg-blue-600 px-6 py-3 rounded-xl">Login</button>
-              <p className="text-gray-400 mt-4">Department: lspd123 | Admin: admin123</p>
+              <p className="text-gray-400 mt-4">Officer: lspd123 | Supervisor: admin123</p>
             </>
           )}
 
-          {page === 'forms' && loggedIn && (
+          {page === 'monthly' && canAccessOfficerPages() && (
             <>
               <h2 className="text-4xl font-bold mb-6">Monthly Activity Check</h2>
               <form onSubmit={submitMonthlyCheck} className="grid gap-4">
@@ -229,7 +273,29 @@ export default function App() {
             </>
           )}
 
-          {page === 'roster' && admin && (
+          {page === 'forms' && canAccessOfficerPages() && (
+            <>
+              <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
+              <p className="text-gray-300 mb-6">Select a department form below. Replace each link with your actual Google Doc, Google Form, PDF, or policy document.</p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {departmentForms.map(form => (
+                  <a
+                    key={form.title}
+                    href={form.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-[#0f172a] border border-blue-900 rounded-xl p-5 hover:bg-blue-950 transition"
+                  >
+                    <h3 className="text-xl font-semibold">{form.title}</h3>
+                    <p className="text-gray-400 mt-2">Open linked form</p>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+
+          {page === 'roster' && canAccessRoster() && (
             <>
               <h2 className="text-4xl font-bold mb-6">Master Roster</h2>
 
