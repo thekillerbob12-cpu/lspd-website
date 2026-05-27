@@ -459,16 +459,57 @@ export default function App() {
 
           {page === 'about' && (
             <>
+              <div className="relative overflow-hidden rounded-2xl border border-blue-900 mb-8">
+                <img
+                  src="/about-main.jpg"
+                  alt="Los Santos Police Department"
+                  className="w-full h-72 object-cover opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#020617]/70 to-transparent"></div>
+                <div className="absolute left-8 bottom-8 max-w-xl">
+                  <p className="uppercase tracking-[5px] text-blue-300 text-sm mb-2">
+                    About the Department
+                  </p>
+                  <h2 className="text-5xl font-black mb-3">
+                    Serving Los Santos
+                  </h2>
+                  <p className="text-gray-300">
+                    Dedicated to professionalism, realistic roleplay, public safety, and strong community leadership.
+                  </p>
+                </div>
+              </div>
+
               <h2 className="text-4xl font-bold mb-4">About Us</h2>
               <p className="text-gray-300 mb-8">
                 The Los Santos Police Department is committed to protecting the city, supporting the community,
-                and maintaining professional roleplay standards.
+                and maintaining professional roleplay standards. Our department values accountability, discipline,
+                teamwork, and service above self.
               </p>
 
-              <div className="grid md:grid-cols-3 gap-5">
+              <div className="grid md:grid-cols-3 gap-5 mb-8">
                 <Card title="Mission" text="Provide fair, realistic, and professional law enforcement roleplay across Los Santos." />
                 <Card title="Values" text="Integrity, discipline, accountability, teamwork, and respect for the community." />
                 <Card title="Community" text="Building trust through active patrols, public interaction, and reliable department leadership." />
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-5">
+                <ImageCard
+                  image="/patrol.jpg"
+                  title="Patrol Operations"
+                  text="Active patrol units maintain public safety and visible law enforcement presence across the city."
+                />
+
+                <ImageCard
+                  image="/command.jpg"
+                  title="Command Leadership"
+                  text="Command staff oversees department standards, training, discipline, and operational readiness."
+                />
+
+                <ImageCard
+                  image="/community.jpg"
+                  title="Community Engagement"
+                  text="LSPD works to build trust through professionalism, responsiveness, and respectful public contact."
+                />
               </div>
             </>
           )}
@@ -745,6 +786,22 @@ function Card({ title, text }) {
     <div className="bg-[#0b1328] border border-blue-900 rounded-2xl p-6">
       <h3 className="text-2xl font-semibold mb-3">{title}</h3>
       <p className="text-gray-400">{text}</p>
+    </div>
+  )
+}
+
+function ImageCard({ image, title, text }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-blue-900 bg-[#0f172a]">
+      <img
+        src={image}
+        alt={title}
+        className="h-44 w-full object-cover opacity-85"
+      />
+      <div className="p-5">
+        <h3 className="text-2xl font-bold mb-2">{title}</h3>
+        <p className="text-gray-400">{text}</p>
+      </div>
     </div>
   )
 }
