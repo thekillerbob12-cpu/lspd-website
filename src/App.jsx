@@ -7,7 +7,9 @@ import {
   Lock,
   Users,
   Trash2,
-  ClipboardCheck
+  ClipboardCheck,
+  RotateCcw,
+  History
 } from 'lucide-react'
 import { supabase } from './supabase'
 
@@ -34,6 +36,8 @@ const divisions = [
   'Command'
 ]
 
+const protectedStatuses = ['VACANT', 'LOA', 'Suspended', 'Under Investigation']
+
 const adminUsers = [
   { username: 'J.malone@lspd.gov', password: 'LSPDHC301', role: 'Chief of Police' },
   { username: 'R.parish@lspd.gov', password: 'LSPDHC302', role: 'Assistant Chief' },
@@ -45,6 +49,9 @@ const adminUsers = [
 export default function App() {
   const [page, setPage] = useState('about')
   const [officers, setOfficers] = useState([])
+  const [monthlyChecks, setMonthlyChecks] = useState([])
+  const [monthlyCycles, setMonthlyCycles] = useState([])
+
   const [accessLevel, setAccessLevel] = useState('public')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -70,12 +77,20 @@ export default function App() {
   })
 
   useEffect(() => {
-    loadOfficers()
+    loadAllData()
   }, [])
 
   function showMessage(text) {
     setMessage(text)
     setTimeout(() => setMessage(''), 4000)
+  }
+
+  async function loadAllData() {
+    await Promise.all([
+      loadOfficers(),
+      loadMonthlyChecks(),
+      loadMonthlyCycles(),
+    ])
   }
 
   async function loadOfficers() {
@@ -85,6 +100,24 @@ export default function App() {
       .order('created_at', { ascending: true })
 
     if (!error && data) setOfficers(data)
+  }
+
+  async function loadMonthlyChecks() {
+    const { data, error } = await supabase
+      .from('monthly_checks')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (!error && data) setMonthlyChecks(data)
+  }
+
+  async function loadMonthlyCycles() {
+    const { data, error } = await supabase
+      .from('monthly_cycles')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (!error && data) setMonthlyCycles(data)
   }
 
   function login() {
@@ -198,6 +231,42 @@ export default function App() {
     loadOfficers()
   }
 
+  async function startNewMonth() {
+    const month = new Date().toISOString().slice(0, 7)
+
+    const { error: cycleError } = await supabase.from('monthly_cycles').insert({
+      month,
+      started_by: loggedInUser || 'Supervisor',
+    })
+
+    if (cycleError) {
+      showMessage(cycleError.message)
+      return
+    }
+
+    const resettableOfficerIds = officers
+      .filter(officer => !protectedStatuses.includes(officer.status))
+      .map(officer => officer.id)
+
+    if (resettableOfficerIds.length > 0) {
+      const { error: resetError } = await supabase
+        .from('officers')
+        .update({
+          monthly_activity_completed: false,
+          last_activity_check: null,
+        })
+        .in('id', resettableOfficerIds)
+
+      if (resetError) {
+        showMessage(resetError.message)
+        return
+      }
+    }
+
+    showMessage('New month started. Regular officers were reset to missing activity.')
+    loadAllData()
+  }
+
   async function submitMonthlyCheck(e) {
     e.preventDefault()
 
@@ -212,6 +281,9 @@ export default function App() {
 
     const { error } = await supabase.from('monthly_checks').insert({
       officer_id: officer.id,
+      officer_name: officer.full_name,
+      callsign: officer.callsign,
+      rank: officer.rank,
       patrol_hours: Number(monthlyForm.patrol_hours),
       activity_summary: monthlyForm.activity_summary,
       supervisor: monthlyForm.supervisor,
@@ -240,11 +312,11 @@ export default function App() {
     })
 
     showMessage('Monthly activity check submitted.')
-    loadOfficers()
+    loadAllData()
   }
 
   function displayStatus(officer) {
-    if (['VACANT', 'LOA', 'Suspended', 'Under Investigation'].includes(officer.status)) {
+    if (protectedStatuses.includes(officer.status)) {
       return officer.status
     }
 
@@ -439,7 +511,17 @@ export default function App() {
 
           {page === 'roster' && canAccessRoster() && (
             <>
-              <h2 className="text-4xl font-bold mb-6">Master Roster</h2>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+                <h2 className="text-4xl font-bold">Master Roster</h2>
+
+                <button
+                  onClick={startNewMonth}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-xl"
+                >
+                  <RotateCcw size={18} />
+                  Start New Month
+                </button>
+              </div>
 
               <form onSubmit={addOfficer} className="grid md:grid-cols-3 gap-3 mb-8">
                 <input placeholder="Full Name" value={newOfficer.full_name} onChange={e => setNewOfficer({ ...newOfficer, full_name: e.target.value })} className="input" />
@@ -463,7 +545,7 @@ export default function App() {
                 </button>
               </form>
 
-              <div className="space-y-4">
+              <div className="space-y-4 mb-10">
                 {officers.map(officer => (
                   <div key={officer.id} className="bg-[#0f172a] border border-blue-900 rounded-xl p-4">
                     <div className="flex justify-between gap-4">
@@ -474,6 +556,9 @@ export default function App() {
                         <p className="text-gray-400">Division: {officer.division || 'Patrol'}</p>
                         <p>Status: {displayStatus(officer)}</p>
                         <p className="text-gray-400">Promotion Date: {officer.promotion_date || 'N/A'}</p>
+                        <p className="text-gray-400">
+                          Last Activity Check: {officer.last_activity_check ? new Date(officer.last_activity_check).toLocaleDateString() : 'N/A'}
+                        </p>
                         {officer.notes && <p className="text-gray-400 mt-2">Notes: {officer.notes}</p>}
                       </div>
 
@@ -501,6 +586,48 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-[#0f172a] border border-blue-900 rounded-xl p-5 mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <History size={20} />
+                  <h3 className="text-2xl font-bold">Submission History</h3>
+                </div>
+
+                {monthlyChecks.length === 0 ? (
+                  <p className="text-gray-400">No monthly checks submitted yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {monthlyChecks.map(check => (
+                      <div key={check.id} className="border border-blue-900 rounded-xl p-4">
+                        <p className="font-bold">{check.officer_name || 'Unknown Officer'} | {check.callsign || 'N/A'}</p>
+                        <p className="text-gray-400">Rank: {check.rank || 'N/A'}</p>
+                        <p className="text-gray-400">Month: {check.submission_month}</p>
+                        <p className="text-gray-400">Patrol Hours: {check.patrol_hours}</p>
+                        <p className="text-gray-400">Supervisor: {check.supervisor}</p>
+                        <p className="text-gray-400 mt-2">Summary: {check.activity_summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-[#0f172a] border border-blue-900 rounded-xl p-5">
+                <h3 className="text-2xl font-bold mb-4">Monthly Cycle History</h3>
+
+                {monthlyCycles.length === 0 ? (
+                  <p className="text-gray-400">No monthly cycles started yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {monthlyCycles.map(cycle => (
+                      <div key={cycle.id} className="border border-blue-900 rounded-xl p-4">
+                        <p className="font-bold">Month: {cycle.month}</p>
+                        <p className="text-gray-400">Started By: {cycle.started_by || 'N/A'}</p>
+                        <p className="text-gray-400">Date: {new Date(cycle.created_at).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
