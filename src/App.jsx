@@ -11,6 +11,28 @@ import {
 } from 'lucide-react'
 import { supabase } from './supabase'
 
+const ranks = [
+  'Cadet',
+  'Officer',
+  'Senior Officer',
+  'Corporal',
+  'Sergeant',
+  'Lieutenant',
+  'Captain',
+  'Deputy Chief',
+  'Chief of Police'
+]
+
+const divisions = [
+  'Patrol',
+  'Traffic',
+  'Detective Bureau',
+  'SWAT',
+  'K9',
+  'Training',
+  'Command'
+]
+
 export default function App() {
   const [page, setPage] = useState('about')
   const [officers, setOfficers] = useState([])
@@ -21,7 +43,11 @@ export default function App() {
   const [newOfficer, setNewOfficer] = useState({
     full_name: '',
     callsign: '',
-    rank: '',
+    badge_number: '',
+    rank: 'Officer',
+    division: 'Patrol',
+    promotion_date: '',
+    notes: '',
   })
 
   const [monthlyForm, setMonthlyForm] = useState({
@@ -89,14 +115,18 @@ export default function App() {
     e.preventDefault()
 
     if (!newOfficer.full_name || !newOfficer.callsign || !newOfficer.rank) {
-      showMessage('Please complete all officer fields.')
+      showMessage('Please complete name, callsign, and rank.')
       return
     }
 
     const { error } = await supabase.from('officers').insert({
       full_name: newOfficer.full_name,
       callsign: newOfficer.callsign,
+      badge_number: newOfficer.badge_number,
       rank: newOfficer.rank,
+      division: newOfficer.division,
+      promotion_date: newOfficer.promotion_date || null,
+      notes: newOfficer.notes,
       status: 'Active',
       monthly_activity_completed: true,
       last_activity_check: new Date().toISOString(),
@@ -107,7 +137,16 @@ export default function App() {
       return
     }
 
-    setNewOfficer({ full_name: '', callsign: '', rank: '' })
+    setNewOfficer({
+      full_name: '',
+      callsign: '',
+      badge_number: '',
+      rank: 'Officer',
+      division: 'Patrol',
+      promotion_date: '',
+      notes: '',
+    })
+
     showMessage('Officer added and marked Active.')
     loadOfficers()
   }
@@ -118,10 +157,23 @@ export default function App() {
     loadOfficers()
   }
 
-  async function updateStatus(id, status) {
-    await supabase.from('officers').update({ status }).eq('id', id)
-    showMessage('Status updated.')
+  async function updateOfficer(id, updates) {
+    const { error } = await supabase
+      .from('officers')
+      .update(updates)
+      .eq('id', id)
+
+    if (error) {
+      showMessage(error.message)
+      return
+    }
+
+    showMessage('Officer updated.')
     loadOfficers()
+  }
+
+  async function updateStatus(id, status) {
+    await updateOfficer(id, { status })
   }
 
   async function submitMonthlyCheck(e) {
@@ -358,10 +410,22 @@ export default function App() {
             <>
               <h2 className="text-4xl font-bold mb-6">Master Roster</h2>
 
-              <form onSubmit={addOfficer} className="grid md:grid-cols-4 gap-3 mb-8">
+              <form onSubmit={addOfficer} className="grid md:grid-cols-3 gap-3 mb-8">
                 <input placeholder="Full Name" value={newOfficer.full_name} onChange={e => setNewOfficer({ ...newOfficer, full_name: e.target.value })} className="input" />
                 <input placeholder="Callsign" value={newOfficer.callsign} onChange={e => setNewOfficer({ ...newOfficer, callsign: e.target.value })} className="input" />
-                <input placeholder="Rank" value={newOfficer.rank} onChange={e => setNewOfficer({ ...newOfficer, rank: e.target.value })} className="input" />
+                <input placeholder="Badge Number" value={newOfficer.badge_number} onChange={e => setNewOfficer({ ...newOfficer, badge_number: e.target.value })} className="input" />
+
+                <select value={newOfficer.rank} onChange={e => setNewOfficer({ ...newOfficer, rank: e.target.value })} className="input">
+                  {ranks.map(rank => <option key={rank}>{rank}</option>)}
+                </select>
+
+                <select value={newOfficer.division} onChange={e => setNewOfficer({ ...newOfficer, division: e.target.value })} className="input">
+                  {divisions.map(division => <option key={division}>{division}</option>)}
+                </select>
+
+                <input type="date" value={newOfficer.promotion_date} onChange={e => setNewOfficer({ ...newOfficer, promotion_date: e.target.value })} className="input" />
+
+                <textarea placeholder="Notes" value={newOfficer.notes} onChange={e => setNewOfficer({ ...newOfficer, notes: e.target.value })} className="input md:col-span-2" />
 
                 <button className="bg-blue-600 rounded-xl">
                   Add Officer
@@ -370,25 +434,39 @@ export default function App() {
 
               <div className="space-y-4">
                 {officers.map(officer => (
-                  <div key={officer.id} className="bg-[#0f172a] border border-blue-900 rounded-xl p-4 flex justify-between gap-4">
-                    <div>
-                      <h3 className="text-xl font-bold">{officer.full_name}</h3>
-                      <p className="text-gray-400">{officer.rank} | {officer.callsign}</p>
-                      <p>Status: {displayStatus(officer)}</p>
-                    </div>
+                  <div key={officer.id} className="bg-[#0f172a] border border-blue-900 rounded-xl p-4">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <h3 className="text-xl font-bold">{officer.full_name}</h3>
+                        <p className="text-gray-400">{officer.rank} | {officer.callsign}</p>
+                        <p className="text-gray-400">Badge: {officer.badge_number || 'N/A'}</p>
+                        <p className="text-gray-400">Division: {officer.division || 'Patrol'}</p>
+                        <p>Status: {displayStatus(officer)}</p>
+                        <p className="text-gray-400">Promotion Date: {officer.promotion_date || 'N/A'}</p>
+                        {officer.notes && <p className="text-gray-400 mt-2">Notes: {officer.notes}</p>}
+                      </div>
 
-                    <div className="flex gap-2">
-                      <select value={officer.status} onChange={e => updateStatus(officer.id, e.target.value)} className="bg-[#020617] border border-blue-900 rounded-xl px-3">
-                        <option>Active</option>
-                        <option>LOA</option>
-                        <option>VACANT</option>
-                        <option>Suspended</option>
-                        <option>Under Investigation</option>
-                      </select>
+                      <div className="flex flex-col gap-2">
+                        <select value={officer.status} onChange={e => updateStatus(officer.id, e.target.value)} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          <option>Active</option>
+                          <option>LOA</option>
+                          <option>VACANT</option>
+                          <option>Suspended</option>
+                          <option>Under Investigation</option>
+                        </select>
 
-                      <button onClick={() => removeOfficer(officer.id)} className="bg-red-700 px-4 rounded-xl">
-                        <Trash2 size={18} />
-                      </button>
+                        <select value={officer.rank} onChange={e => updateOfficer(officer.id, { rank: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          {ranks.map(rank => <option key={rank}>{rank}</option>)}
+                        </select>
+
+                        <select value={officer.division || 'Patrol'} onChange={e => updateOfficer(officer.id, { division: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          {divisions.map(division => <option key={division}>{division}</option>)}
+                        </select>
+
+                        <button onClick={() => removeOfficer(officer.id)} className="bg-red-700 px-4 py-2 rounded-xl">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
