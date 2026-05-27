@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import {
-  Shield,
   Info,
   FileText,
   Mail,
@@ -197,14 +196,8 @@ export default function App() {
   }
 
   function displayStatus(officer) {
-    if (isProtectedStatus(officer.status)) {
-      return officer.status
-    }
-
-    if (officer.status === 'Inactive') {
-      return 'Inactive'
-    }
-
+    if (isProtectedStatus(officer.status)) return officer.status
+    if (officer.status === 'Inactive') return 'Inactive'
     return officer.monthly_activity_completed ? 'Active' : 'Inactive'
   }
 
@@ -394,33 +387,37 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
-      <header className="bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] border-b border-blue-900">
-        <div className="max-w-6xl mx-auto px-6 py-10 flex justify-between">
-          <div className="flex gap-5">
-           <div className="w-24 h-24 rounded-2xl overflow-hidden border border-blue-500 bg-[#0f172a] flex items-center justify-center shadow-2xl shadow-blue-900/40">
-  <img
-    src="/lspd-badge.png"
-    alt="LSPD Badge"
-    className="w-full h-full object-contain p-2"
-  />
-</div>
+      <header className="relative overflow-hidden border-b border-blue-900 bg-[#020617]">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#0f172a] to-[#1e3a8a] opacity-95"></div>
+        <div className="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl"></div>
+        <div className="absolute left-0 bottom-0 w-full h-[1px] bg-blue-500/60"></div>
+
+        <div className="relative max-w-6xl mx-auto px-6 py-12 flex justify-between items-center">
+          <div className="flex gap-6 items-center">
+            <div className="w-24 h-24 rounded-2xl overflow-hidden border border-blue-500 bg-[#0f172a] flex items-center justify-center shadow-2xl shadow-blue-900/40">
+              <img
+                src="/lspd-badge.png"
+                alt="LSPD Badge"
+                className="w-full h-full object-contain p-2"
+              />
+            </div>
 
             <div>
-            <p className="uppercase tracking-[8px] text-blue-400 text-sm font-semibold">
-  LOS SANTOS POLICE DEPARTMENT
-</p>
+              <p className="uppercase tracking-[8px] text-blue-400 text-sm font-semibold">
+                LOS SANTOS POLICE DEPARTMENT
+              </p>
 
-<h1 className="text-6xl font-black mt-2 leading-none tracking-tight">
-  LSPD PORTAL
-</h1>
+              <h1 className="text-6xl font-black mt-2 leading-none tracking-tight">
+                LSPD PORTAL
+              </h1>
 
-<div className="flex items-center gap-3 mt-4">
-  <div className="w-16 h-[2px] bg-blue-500"></div>
-
-  <p className="text-gray-300 text-lg tracking-wide">
-    Professional Law Enforcement Management System
-  </p>
-</div>
+              <div className="flex items-center gap-3 mt-4">
+                <div className="w-16 h-[2px] bg-blue-500"></div>
+                <p className="text-gray-300 text-lg tracking-wide">
+                  Professional Law Enforcement Management System
+                </p>
+              </div>
+            </div>
           </div>
 
           {accessLevel !== 'public' && (
@@ -430,7 +427,7 @@ export default function App() {
               </p>
               <button
                 onClick={logout}
-                className="border border-red-700 px-5 py-3 rounded-xl"
+                className="border border-red-700 px-5 py-3 rounded-xl hover:bg-red-950"
               >
                 Logout
               </button>
@@ -448,27 +445,9 @@ export default function App() {
           <Nav icon={<Info />} text="About Us" active={page === 'about'} onClick={() => setPage('about')} />
           <Nav icon={<FileText />} text="Apply Here" active={page === 'apply'} onClick={() => setPage('apply')} />
           <Nav icon={<Mail />} text="Contact Us" active={page === 'contact'} onClick={() => setPage('contact')} />
-
-          <Nav
-            icon={<ClipboardCheck />}
-            text="Monthly Activity Check"
-            active={page === 'monthly'}
-            onClick={() => canAccessOfficerPages() ? setPage('monthly') : setPage('login')}
-          />
-
-          <Nav
-            icon={<Lock />}
-            text="Department Forms"
-            active={page === 'forms'}
-            onClick={() => canAccessOfficerPages() ? setPage('forms') : setPage('login')}
-          />
-
-          <Nav
-            icon={<Users />}
-            text="Master Roster"
-            active={page === 'roster'}
-            onClick={() => canAccessRoster() ? setPage('roster') : setPage('login')}
-          />
+          <Nav icon={<ClipboardCheck />} text="Monthly Activity Check" active={page === 'monthly'} onClick={() => canAccessOfficerPages() ? setPage('monthly') : setPage('login')} />
+          <Nav icon={<Lock />} text="Department Forms" active={page === 'forms'} onClick={() => canAccessOfficerPages() ? setPage('forms') : setPage('login')} />
+          <Nav icon={<Users />} text="Master Roster" active={page === 'roster'} onClick={() => canAccessRoster() ? setPage('roster') : setPage('login')} />
         </nav>
 
         <section className="bg-[#061126] border border-[#13203a] rounded-2xl p-6">
@@ -613,12 +592,7 @@ export default function App() {
               </div>
 
               <div className="grid md:grid-cols-4 gap-3 mb-6">
-                <input
-                  placeholder="Search name, callsign, badge..."
-                  value={rosterSearch}
-                  onChange={e => setRosterSearch(e.target.value)}
-                  className="input"
-                />
+                <input placeholder="Search name, callsign, badge..." value={rosterSearch} onChange={e => setRosterSearch(e.target.value)} className="input" />
 
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input">
                   <option>All</option>
@@ -655,7 +629,6 @@ export default function App() {
                 </select>
 
                 <input type="date" value={newOfficer.promotion_date} onChange={e => setNewOfficer({ ...newOfficer, promotion_date: e.target.value })} className="input" />
-
                 <textarea placeholder="Notes" value={newOfficer.notes} onChange={e => setNewOfficer({ ...newOfficer, notes: e.target.value })} className="input md:col-span-2" />
 
                 <button className="bg-blue-600 rounded-xl">
