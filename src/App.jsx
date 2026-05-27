@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Shield,
- Info,
+  Info,
   FileText,
   Mail,
   Lock,
@@ -20,6 +20,7 @@ const ranks = [
   'Lieutenant',
   'Captain',
   'Deputy Chief',
+  'Assistant Chief',
   'Chief of Police'
 ]
 
@@ -34,42 +35,20 @@ const divisions = [
 ]
 
 const adminUsers = [
-  {
-    username: 'R.parish@lspd.gov',
-    password: 'LSPDHC302',
-    role: 'Chief of Police',
-  },
-  {
-    username: 'J.malone@lspd.gov',
-    password: 'LSPDHC301',
-    role: 'Assistant Chief',
-  },
-  {
-    username: 'A.alastor1@lspd.gov',
-    password: 'LSPDHC303',
-    role: 'Deputy Chief',
-  },
-  {
-    username: 'A.alastor2@lspd.gov',
-    password: 'LSPDHC304',
-    role: 'Commander',
-  },
-  {
-    username: 'admin@lspd.gov',
-    password: 'adminpass100!',
-    role: 'System Administrator',
-  },
+  { username: 'J.malone@lspd.gov', password: 'LSPDHC301', role: 'Chief of Police' },
+  { username: 'R.parish@lspd.gov', password: 'LSPDHC302', role: 'Assistant Chief' },
+  { username: 'A.alastor1@lspd.gov', password: 'LSPDHC303', role: 'Deputy Chief' },
+  { username: 'A.alastor2@lspd.gov', password: 'LSPDHC304', role: 'Commander' },
+  { username: 'admin@lspd.gov', password: 'adminpass100!', role: 'System Administrator' },
 ]
 
 export default function App() {
   const [page, setPage] = useState('about')
   const [officers, setOfficers] = useState([])
   const [accessLevel, setAccessLevel] = useState('public')
-
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loggedInUser, setLoggedInUser] = useState('')
-
   const [message, setMessage] = useState('')
 
   const [newOfficer, setNewOfficer] = useState({
@@ -161,6 +140,11 @@ export default function App() {
   async function addOfficer(e) {
     e.preventDefault()
 
+    if (!newOfficer.full_name || !newOfficer.callsign || !newOfficer.rank) {
+      showMessage('Please complete name, callsign, and rank.')
+      return
+    }
+
     const { error } = await supabase.from('officers').insert({
       full_name: newOfficer.full_name,
       callsign: newOfficer.callsign,
@@ -189,7 +173,7 @@ export default function App() {
       notes: '',
     })
 
-    showMessage('Officer added.')
+    showMessage('Officer added and marked Active.')
     loadOfficers()
   }
 
@@ -200,13 +184,18 @@ export default function App() {
   }
 
   async function updateOfficer(id, updates) {
-    await supabase.from('officers').update(updates).eq('id', id)
+    const { error } = await supabase
+      .from('officers')
+      .update(updates)
+      .eq('id', id)
+
+    if (error) {
+      showMessage(error.message)
+      return
+    }
+
     showMessage('Officer updated.')
     loadOfficers()
-  }
-
-  async function updateStatus(id, status) {
-    await updateOfficer(id, { status })
   }
 
   async function submitMonthlyCheck(e) {
@@ -217,7 +206,7 @@ export default function App() {
     )
 
     if (!officer) {
-      showMessage('No officer found.')
+      showMessage('No officer found with that callsign.')
       return
     }
 
@@ -255,16 +244,11 @@ export default function App() {
   }
 
   function displayStatus(officer) {
-    if (
-      ['VACANT', 'LOA', 'Suspended', 'Under Investigation']
-        .includes(officer.status)
-    ) {
+    if (['VACANT', 'LOA', 'Suspended', 'Under Investigation'].includes(officer.status)) {
       return officer.status
     }
 
-    return officer.monthly_activity_completed
-      ? 'Active'
-      : 'Inactive'
+    return officer.monthly_activity_completed ? 'Active' : 'Inactive'
   }
 
   const departmentForms = [
@@ -289,14 +273,11 @@ export default function App() {
               <p className="uppercase tracking-[6px] text-blue-300 text-sm">
                 Los Santos Police Department
               </p>
-
               <h1 className="text-5xl font-bold mt-2">
                 LSPD Department Portal
               </h1>
-
               <p className="text-gray-300 mt-4">
-                Serving Los Santos with professionalism,
-                integrity, and dedication.
+                Serving Los Santos with professionalism, integrity, and dedication.
               </p>
             </div>
           </div>
@@ -306,7 +287,6 @@ export default function App() {
               <p className="text-blue-300 mb-2">
                 Logged in as: {loggedInUser}
               </p>
-
               <button
                 onClick={logout}
                 className="border border-red-700 px-5 py-3 rounded-xl"
@@ -319,7 +299,6 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8 grid md:grid-cols-[260px_1fr] gap-6">
-
         <nav className="bg-[#061126] border border-[#13203a] rounded-2xl p-5">
           <p className="text-xs tracking-[4px] text-blue-300 uppercase mb-6">
             Navigation
@@ -333,38 +312,25 @@ export default function App() {
             icon={<ClipboardCheck />}
             text="Monthly Activity Check"
             active={page === 'monthly'}
-            onClick={() =>
-              canAccessOfficerPages()
-                ? setPage('monthly')
-                : setPage('login')
-            }
+            onClick={() => canAccessOfficerPages() ? setPage('monthly') : setPage('login')}
           />
 
           <Nav
             icon={<Lock />}
             text="Department Forms"
             active={page === 'forms'}
-            onClick={() =>
-              canAccessOfficerPages()
-                ? setPage('forms')
-                : setPage('login')
-            }
+            onClick={() => canAccessOfficerPages() ? setPage('forms') : setPage('login')}
           />
 
           <Nav
             icon={<Users />}
             text="Master Roster"
             active={page === 'roster'}
-            onClick={() =>
-              canAccessRoster()
-                ? setPage('roster')
-                : setPage('login')
-            }
+            onClick={() => canAccessRoster() ? setPage('roster') : setPage('login')}
           />
         </nav>
 
         <section className="bg-[#061126] border border-[#13203a] rounded-2xl p-6">
-
           {message && (
             <div className="mb-4 border border-blue-700 rounded-xl p-3 text-blue-200">
               {message}
@@ -373,47 +339,36 @@ export default function App() {
 
           {page === 'about' && (
             <>
-              <h2 className="text-4xl font-bold mb-4">
-                About Us
-              </h2>
-
-              <p className="text-gray-300">
-                The Los Santos Police Department is committed
-                to protecting the city and maintaining
-                professional roleplay standards.
+              <h2 className="text-4xl font-bold mb-4">About Us</h2>
+              <p className="text-gray-300 mb-8">
+                The Los Santos Police Department is committed to protecting the city and maintaining professional roleplay standards.
               </p>
+
+              <div className="grid md:grid-cols-3 gap-5">
+                <Card title="Mission" text="Provide fair, realistic, and professional law enforcement roleplay." />
+                <Card title="Values" text="Integrity, discipline, accountability, teamwork, and respect." />
+                <Card title="Community" text="Building trust through patrols, interaction, and leadership." />
+              </div>
             </>
           )}
 
           {page === 'apply' && (
             <>
-              <h2 className="text-4xl font-bold mb-4">
-                Apply Here
-              </h2>
-
-              <p className="text-gray-300">
-                Recruitment applications coming soon.
-              </p>
+              <h2 className="text-4xl font-bold mb-4">Apply Here</h2>
+              <p className="text-gray-300">Application system coming next.</p>
             </>
           )}
 
           {page === 'contact' && (
             <>
-              <h2 className="text-4xl font-bold mb-4">
-                Contact Us
-              </h2>
-
-              <p className="text-gray-300">
-                Contact command staff through Discord.
-              </p>
+              <h2 className="text-4xl font-bold mb-4">Contact Us</h2>
+              <p className="text-gray-300">Contact command staff through Discord.</p>
             </>
           )}
 
           {page === 'login' && (
             <>
-              <h2 className="text-4xl font-bold mb-4">
-                Department Login
-              </h2>
+              <h2 className="text-4xl font-bold mb-4">Department Login</h2>
 
               <input
                 value={username}
@@ -437,38 +392,19 @@ export default function App() {
               >
                 Login
               </button>
-
-              <p className="text-gray-400 mt-4">
-                Officer Login:
-                <br />
-                officer@lspd.gov / lspd123
-              </p>
             </>
           )}
 
           {page === 'monthly' && canAccessOfficerPages() && (
             <>
-              <h2 className="text-4xl font-bold mb-6">
-                Monthly Activity Check
-              </h2>
+              <h2 className="text-4xl font-bold mb-6">Monthly Activity Check</h2>
 
               <form onSubmit={submitMonthlyCheck} className="grid gap-4">
                 <input placeholder="Callsign" value={monthlyForm.callsign} onChange={e => setMonthlyForm({ ...monthlyForm, callsign: e.target.value })} className="input" />
                 <input placeholder="Patrol Hours" type="number" value={monthlyForm.patrol_hours} onChange={e => setMonthlyForm({ ...monthlyForm, patrol_hours: e.target.value })} className="input" />
                 <input placeholder="Supervisor" value={monthlyForm.supervisor} onChange={e => setMonthlyForm({ ...monthlyForm, supervisor: e.target.value })} className="input" />
                 <input type="month" value={monthlyForm.submission_month} onChange={e => setMonthlyForm({ ...monthlyForm, submission_month: e.target.value })} className="input" />
-
-                <textarea
-                  placeholder="Activity Summary"
-                  value={monthlyForm.activity_summary}
-                  onChange={e =>
-                    setMonthlyForm({
-                      ...monthlyForm,
-                      activity_summary: e.target.value
-                    })
-                  }
-                  className="input min-h-32"
-                />
+                <textarea placeholder="Activity Summary" value={monthlyForm.activity_summary} onChange={e => setMonthlyForm({ ...monthlyForm, activity_summary: e.target.value })} className="input min-h-32" />
 
                 <button className="bg-blue-600 px-6 py-3 rounded-xl">
                   Submit Monthly Check
@@ -479,9 +415,10 @@ export default function App() {
 
           {page === 'forms' && canAccessOfficerPages() && (
             <>
-              <h2 className="text-4xl font-bold mb-6">
-                Department Forms
-              </h2>
+              <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
+              <p className="text-gray-300 mb-6">
+                Select a department form below. Replace each link with your actual Google Doc, Google Form, PDF, or policy document.
+              </p>
 
               <div className="grid md:grid-cols-2 gap-4">
                 {departmentForms.map(form => (
@@ -492,13 +429,8 @@ export default function App() {
                     rel="noreferrer"
                     className="bg-[#0f172a] border border-blue-900 rounded-xl p-5 hover:bg-blue-950 transition"
                   >
-                    <h3 className="text-xl font-semibold">
-                      {form.title}
-                    </h3>
-
-                    <p className="text-gray-400 mt-2">
-                      Open linked form
-                    </p>
+                    <h3 className="text-xl font-semibold">{form.title}</h3>
+                    <p className="text-gray-400 mt-2">Open linked form</p>
                   </a>
                 ))}
               </div>
@@ -507,11 +439,69 @@ export default function App() {
 
           {page === 'roster' && canAccessRoster() && (
             <>
-              <h2 className="text-4xl font-bold mb-6">
-                Master Roster
-              </h2>
+              <h2 className="text-4xl font-bold mb-6">Master Roster</h2>
 
-              {/* KEEP YOUR EXISTING ROSTER CODE HERE */}
+              <form onSubmit={addOfficer} className="grid md:grid-cols-3 gap-3 mb-8">
+                <input placeholder="Full Name" value={newOfficer.full_name} onChange={e => setNewOfficer({ ...newOfficer, full_name: e.target.value })} className="input" />
+                <input placeholder="Callsign" value={newOfficer.callsign} onChange={e => setNewOfficer({ ...newOfficer, callsign: e.target.value })} className="input" />
+                <input placeholder="Badge Number" value={newOfficer.badge_number} onChange={e => setNewOfficer({ ...newOfficer, badge_number: e.target.value })} className="input" />
+
+                <select value={newOfficer.rank} onChange={e => setNewOfficer({ ...newOfficer, rank: e.target.value })} className="input">
+                  {ranks.map(rank => <option key={rank}>{rank}</option>)}
+                </select>
+
+                <select value={newOfficer.division} onChange={e => setNewOfficer({ ...newOfficer, division: e.target.value })} className="input">
+                  {divisions.map(division => <option key={division}>{division}</option>)}
+                </select>
+
+                <input type="date" value={newOfficer.promotion_date} onChange={e => setNewOfficer({ ...newOfficer, promotion_date: e.target.value })} className="input" />
+
+                <textarea placeholder="Notes" value={newOfficer.notes} onChange={e => setNewOfficer({ ...newOfficer, notes: e.target.value })} className="input md:col-span-2" />
+
+                <button className="bg-blue-600 rounded-xl">
+                  Add Officer
+                </button>
+              </form>
+
+              <div className="space-y-4">
+                {officers.map(officer => (
+                  <div key={officer.id} className="bg-[#0f172a] border border-blue-900 rounded-xl p-4">
+                    <div className="flex justify-between gap-4">
+                      <div>
+                        <h3 className="text-xl font-bold">{officer.full_name}</h3>
+                        <p className="text-gray-400">{officer.rank} | {officer.callsign}</p>
+                        <p className="text-gray-400">Badge: {officer.badge_number || 'N/A'}</p>
+                        <p className="text-gray-400">Division: {officer.division || 'Patrol'}</p>
+                        <p>Status: {displayStatus(officer)}</p>
+                        <p className="text-gray-400">Promotion Date: {officer.promotion_date || 'N/A'}</p>
+                        {officer.notes && <p className="text-gray-400 mt-2">Notes: {officer.notes}</p>}
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <select value={officer.status} onChange={e => updateOfficer(officer.id, { status: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          <option>Active</option>
+                          <option>LOA</option>
+                          <option>VACANT</option>
+                          <option>Suspended</option>
+                          <option>Under Investigation</option>
+                        </select>
+
+                        <select value={officer.rank} onChange={e => updateOfficer(officer.id, { rank: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          {ranks.map(rank => <option key={rank}>{rank}</option>)}
+                        </select>
+
+                        <select value={officer.division || 'Patrol'} onChange={e => updateOfficer(officer.id, { division: e.target.value })} className="bg-[#020617] border border-blue-900 rounded-xl px-3 py-2">
+                          {divisions.map(division => <option key={division}>{division}</option>)}
+                        </select>
+
+                        <button onClick={() => removeOfficer(officer.id)} className="bg-red-700 px-4 py-2 rounded-xl">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </section>
@@ -525,13 +515,20 @@ function Nav({ icon, text, active, onClick }) {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl mb-3 text-left ${
-        active
-          ? 'bg-blue-600 text-white'
-          : 'hover:bg-[#0f172a] text-gray-300'
+        active ? 'bg-blue-600 text-white' : 'hover:bg-[#0f172a] text-gray-300'
       }`}
     >
       <span className="shrink-0">{icon}</span>
       <span className="text-left leading-tight">{text}</span>
     </button>
+  )
+}
+
+function Card({ title, text }) {
+  return (
+    <div className="bg-[#0b1328] border border-blue-900 rounded-2xl p-6">
+      <h3 className="text-2xl font-semibold mb-3">{title}</h3>
+      <p className="text-gray-400">{text}</p>
+    </div>
   )
 }
