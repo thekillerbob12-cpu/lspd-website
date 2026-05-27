@@ -192,13 +192,18 @@ export default function App() {
     return accessLevel === 'supervisor'
   }
 
-  function displayStatus(officer) {
-    if (protectedStatuses.includes(officer.status)) {
-      return officer.status
-    }
-
-    return officer.monthly_activity_completed ? 'Active' : 'Inactive'
+ function displayStatus(officer) {
+  if (
+    officer.status === 'LOA' ||
+    officer.status === 'VACANT' ||
+    officer.status === 'Suspended' ||
+    officer.status === 'Under Investigation'
+  ) {
+    return officer.status
   }
+
+  return officer.monthly_activity_completed ? 'Active' : 'Inactive'
+}
 
   const filteredOfficers = officers.filter(officer => {
     const search = rosterSearch.toLowerCase()
@@ -282,55 +287,67 @@ export default function App() {
     loadAllData()
   }
 
-  async function startNewMonth() {
-    const month = new Date().toISOString().slice(0, 7)
+ async function startNewMonth() {
+  const month = new Date().toISOString().slice(0, 7)
 
-    const { error: cycleError } = await supabase.from('monthly_cycles').insert({
+  const { error: cycleError } = await supabase
+    .from('monthly_cycles')
+    .insert({
       month,
       started_by: loggedInUser || 'Supervisor',
     })
 
-    if (cycleError) {
-      showMessage(cycleError.message)
-      return
-    }
-
-    const resettableOfficerIds = officers
-      .filter(officer => !protectedStatuses.includes(officer.status))
-      .map(officer => officer.id)
-
-    if (resettableOfficerIds.length > 0) {
-      const { error: resetError } = await supabase
-        .from('officers')
-        .update({
-          monthly_activity_completed: false,
-          last_activity_check: null,
-        })
-        .in('id', resettableOfficerIds)
-
-      if (resetError) {
-        showMessage(resetError.message)
-        return
-      }
-    }
-
-    showMessage('New month started. Regular officers were reset to Inactive.')
-    loadAllData()
+  if (cycleError) {
+    showMessage(cycleError.message)
+    return
   }
 
-  async function submitMonthlyCheck(e) {
-    e.preventDefault()
-
-    const officer = officers.find(
-      o => o.callsign.toLowerCase() === monthlyForm.callsign.toLowerCase()
+  const resettableOfficerIds = officers
+    .filter(
+      officer =>
+        officer.status !== 'LOA' &&
+        officer.status !== 'VACANT' &&
+        officer.status !== 'Suspended' &&
+        officer.status !== 'Under Investigation'
     )
+    .map(officer => officer.id)
 
-    if (!officer) {
-      showMessage('No officer found with that callsign.')
+  if (resettableOfficerIds.length > 0) {
+    const { error: resetError } = await supabase
+      .from('officers')
+      .update({
+        monthly_activity_completed: false,
+        status: 'Inactive',
+        last_activity_check: null,
+      })
+      .in('id', resettableOfficerIds)
+
+    if (resetError) {
+      showMessage(resetError.message)
       return
     }
+  }
 
-    const { error } = await supabase.from('monthly_checks').insert({
+  showMessage('New month started. Officers reset to Inactive.')
+  loadAllData()
+}
+  }
+
+ async function submitMonthlyCheck(e) {
+  e.preventDefault()
+
+  const officer = officers.find(
+    o => o.callsign.toLowerCase() === monthlyForm.callsign.toLowerCase()
+  )
+
+  if (!officer) {
+    showMessage('No officer found with that callsign.')
+    return
+  }
+
+  const { error } = await supabase
+    .from('monthly_checks')
+    .insert({
       officer_id: officer.id,
       officer_name: officer.full_name,
       callsign: officer.callsign,
@@ -341,30 +358,31 @@ export default function App() {
       submission_month: monthlyForm.submission_month,
     })
 
-    if (error) {
-      showMessage(error.message)
-      return
-    }
-
-    await supabase
-      .from('officers')
-      .update({
-        monthly_activity_completed: true,
-        last_activity_check: new Date().toISOString(),
-      })
-      .eq('id', officer.id)
-
-    setMonthlyForm({
-      callsign: '',
-      patrol_hours: '',
-      activity_summary: '',
-      supervisor: '',
-      submission_month: new Date().toISOString().slice(0, 7),
-    })
-
-    showMessage('Monthly activity check submitted.')
-    loadAllData()
+  if (error) {
+    showMessage(error.message)
+    return
   }
+
+  await supabase
+    .from('officers')
+    .update({
+      monthly_activity_completed: true,
+      status: 'Active',
+      last_activity_check: new Date().toISOString(),
+    })
+    .eq('id', officer.id)
+
+  setMonthlyForm({
+    callsign: '',
+    patrol_hours: '',
+    activity_summary: '',
+    supervisor: '',
+    submission_month: new Date().toISOString().slice(0, 7),
+  })
+
+  showMessage('Monthly activity check submitted.')
+  loadAllData()
+}
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
