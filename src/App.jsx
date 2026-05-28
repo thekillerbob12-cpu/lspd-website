@@ -590,19 +590,95 @@ export default function App() {
             </>
           )}
 
-          {page === 'contact' && (
-            <>
-              <h2 className="text-4xl font-bold mb-4">Contact Us</h2>
-              <p className="text-gray-300 mb-6">
-                Contact command staff for questions, recruitment help, complaints, or department support.
-              </p>
+         {page === 'contact' && (
+  <>
+    <div className="relative overflow-hidden rounded-2xl border border-blue-900 mb-8">
+      <img
+        src="/patrol.jpg"
+        alt="Contact LSPD"
+        className="w-full h-72 object-cover opacity-75"
+      />
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card title="Discord" text="Replace this with your server invite or command staff contact." />
-                <Card title="Email" text="lspd@example.com" />
-              </div>
-            </>
-          )}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#020617]/75 to-transparent"></div>
+
+      <div className="absolute left-8 bottom-8 max-w-xl">
+        <p className="uppercase tracking-[5px] text-blue-300 text-sm mb-2">
+          Department Contact
+        </p>
+
+        <h2 className="text-5xl font-black mb-3">
+          Contact Us
+        </h2>
+
+        <p className="text-gray-300">
+          Reach command staff for recruitment questions, complaints,
+          partnerships, or general department support.
+        </p>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-4 mb-8">
+      <a
+        href="https://discord.gg/GznXtDbPqA"
+        target="_blank"
+        rel="noreferrer"
+        className="bg-[#0f172a] border border-blue-900 rounded-2xl p-6 hover:bg-blue-950 transition"
+      >
+        <h3 className="text-2xl font-bold mb-2">LSPD Discord</h3>
+        <p className="text-gray-400 mb-4">
+          Official Los Santos Police Department communications server.
+        </p>
+        <p className="text-blue-300 font-semibold">discord.gg/GznXtDbPqA</p>
+      </a>
+
+      <a
+        href="https://discord.gg/RaERpXvuVH"
+        target="_blank"
+        rel="noreferrer"
+        className="bg-[#0f172a] border border-blue-900 rounded-2xl p-6 hover:bg-blue-950 transition"
+      >
+        <h3 className="text-2xl font-bold mb-2">Royalty County Roleplay Discord</h3>
+        <p className="text-gray-400 mb-4">
+          Official main community Discord server.
+        </p>
+        <p className="text-blue-300 font-semibold">discord.gg/RaERpXvuVH</p>
+      </a>
+    </div>
+
+    <div className="bg-[#0f172a] border border-blue-900 rounded-2xl p-6">
+      <h3 className="text-3xl font-bold mb-4">
+        Department Leadership
+      </h3>
+
+      <div className="grid md:grid-cols-2 gap-4 text-gray-300">
+        <div className="border border-blue-900 rounded-xl p-4">
+          <p className="font-bold text-white">Chief of Police</p>
+          <p>Jack Malone</p>
+        </div>
+
+        <div className="border border-blue-900 rounded-xl p-4">
+          <p className="font-bold text-white">Assistant Chief</p>
+          <p>Ryan Parish</p>
+        </div>
+
+        <div className="border border-blue-900 rounded-xl p-4">
+          <p className="font-bold text-white">Deputy Chief</p>
+          <p>Ashley Alastor</p>
+        </div>
+
+        <div className="border border-blue-900 rounded-xl p-4">
+          <p className="font-bold text-white">Watch Commander</p>
+          <p>Alaina Alastor</p>
+        </div>
+
+        <div className="border border-blue-900 rounded-xl p-4 md:col-span-2">
+          <p className="font-bold text-white">Website Inquiries</p>
+          <p>Bryce Parish (spedsped.)</p>
+        </div>
+      </div>
+    </div>
+  </>
+)}
 
           {page === 'login' && (
             <>
