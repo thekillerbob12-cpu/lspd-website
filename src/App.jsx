@@ -413,20 +413,29 @@ export default function App() {
             </div>
           </div>
 
-          {accessLevel !== 'public' && (
-            <div className="text-right">
-              <p className="text-blue-300 mb-2">
-                Logged in as: {loggedInUser}
-              </p>
+          <div className="text-right">
+            {accessLevel !== 'public' ? (
+              <>
+                <p className="text-blue-300 mb-2">
+                  Logged in as: {loggedInUser}
+                </p>
 
+                <button
+                  onClick={logout}
+                  className="border border-red-700 px-5 py-3 rounded-xl hover:bg-red-950"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
               <button
-                onClick={logout}
-                className="border border-red-700 px-5 py-3 rounded-xl hover:bg-red-950"
+                onClick={() => setPage('login')}
+                className="border border-blue-500 px-6 py-3 rounded-xl text-blue-200 hover:bg-blue-950"
               >
-                Logout
+                Login
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
@@ -745,6 +754,27 @@ export default function App() {
             </>
           )}
 
+          {page === 'forms' && canAccessForms() && (
+            <>
+              <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {departmentForms.map(form => (
+                  <a
+                    key={form.title}
+                    href={form.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-[#0f172a] border border-blue-900 rounded-xl p-5 hover:bg-blue-950 transition"
+                  >
+                    <h3 className="text-xl font-semibold">{form.title}</h3>
+                    <p className="text-gray-400 mt-2">Open linked form</p>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+
           {page === 'banner' && canAccessAdminPages() && (
             <>
               <h2 className="text-4xl font-bold mb-4">Message Banner</h2>
@@ -807,27 +837,6 @@ export default function App() {
               >
                 Login
               </button>
-            </>
-          )}
-
-          {page === 'forms' && canAccessForms() && (
-            <>
-              <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {departmentForms.map(form => (
-                  <a
-                    key={form.title}
-                    href={form.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bg-[#0f172a] border border-blue-900 rounded-xl p-5 hover:bg-blue-950 transition"
-                  >
-                    <h3 className="text-xl font-semibold">{form.title}</h3>
-                    <p className="text-gray-400 mt-2">Open linked form</p>
-                  </a>
-                ))}
-              </div>
             </>
           )}
 
