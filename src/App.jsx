@@ -73,6 +73,7 @@ export default function App() {
     title: '',
     body: '',
     image_url: '',
+    video_url: '',
   })
 
   const [bannerMessage, setBannerMessage] = useState('')
@@ -88,6 +89,14 @@ export default function App() {
   })
 
   useEffect(() => {
+    const savedLogin = localStorage.getItem('lspd_login')
+
+    if (savedLogin) {
+      const parsedLogin = JSON.parse(savedLogin)
+      setAccessLevel(parsedLogin.accessLevel)
+      setLoggedInUser(parsedLogin.loggedInUser)
+    }
+
     loadAllData()
   }, [])
 
@@ -147,7 +156,32 @@ export default function App() {
       setPage('roster')
       setUsername('')
       setPassword('')
+
+      localStorage.setItem('lspd_login', JSON.stringify({
+        accessLevel: 'supervisor',
+        loggedInUser: matchedAdmin.role,
+      }))
+
       showMessage(`Welcome ${matchedAdmin.role}`)
+      return
+    }
+
+    if (
+      username.toLowerCase() === 'officer@lspd.gov' &&
+      password === 'lspd123'
+    ) {
+      setAccessLevel('officer')
+      setLoggedInUser('Officer')
+      setPage('forms')
+      setUsername('')
+      setPassword('')
+
+      localStorage.setItem('lspd_login', JSON.stringify({
+        accessLevel: 'officer',
+        loggedInUser: 'Officer',
+      }))
+
+      showMessage('Officer access granted.')
       return
     }
 
@@ -155,6 +189,7 @@ export default function App() {
   }
 
   function logout() {
+    localStorage.removeItem('lspd_login')
     setAccessLevel('public')
     setLoggedInUser('')
     setPage('about')
@@ -167,8 +202,35 @@ export default function App() {
     return accessLevel === 'supervisor'
   }
 
+  function canAccessForms() {
+    return accessLevel === 'supervisor' || accessLevel === 'officer'
+  }
+
   function displayStatus(officer) {
     return officer.status || 'Active'
+  }
+
+  function getYouTubeEmbed(url) {
+    if (!url) return ''
+
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('watch?v=', 'embed/')
+    }
+
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0]
+      return `https://www.youtube.com/embed/${id}`
+    }
+
+    return url
+  }
+
+  function isDirectVideo(url) {
+    return (
+      url?.endsWith('.mp4') ||
+      url?.endsWith('.webm') ||
+      url?.endsWith('.ogg')
+    )
   }
 
   const filteredOfficers = officers.filter(officer => {
@@ -203,6 +265,7 @@ export default function App() {
       title: newsForm.title,
       body: newsForm.body,
       image_url: newsForm.image_url || null,
+      video_url: newsForm.video_url || null,
       posted_by: loggedInUser || 'Website Admin',
     })
 
@@ -211,7 +274,7 @@ export default function App() {
       return
     }
 
-    setNewsForm({ title: '', body: '', image_url: '' })
+    setNewsForm({ title: '', body: '', image_url: '', video_url: '' })
     showMessage('Department news post published.')
     loadNewsPosts()
   }
@@ -388,8 +451,8 @@ export default function App() {
           <Nav icon={<FileText />} text="Apply Here" active={page === 'apply'} onClick={() => setPage('apply')} />
           <Nav icon={<Mail />} text="Contact Us" active={page === 'contact'} onClick={() => setPage('contact')} />
           <Nav icon={<Newspaper />} text="Department News" active={page === 'news'} onClick={() => setPage('news')} />
+          <Nav icon={<Lock />} text="Department Forms" active={page === 'forms'} onClick={() => canAccessForms() ? setPage('forms') : setPage('login')} />
           <Nav icon={<Megaphone />} text="Message Banner" active={page === 'banner'} onClick={() => canAccessAdminPages() ? setPage('banner') : setPage('login')} />
-          <Nav icon={<Lock />} text="Department Forms" active={page === 'forms'} onClick={() => canAccessAdminPages() ? setPage('forms') : setPage('login')} />
           <Nav icon={<Users />} text="Master Roster" active={page === 'roster'} onClick={() => canAccessAdminPages() ? setPage('roster') : setPage('login')} />
         </nav>
 
@@ -608,6 +671,13 @@ export default function App() {
                     className="input mb-4"
                   />
 
+                  <input
+                    placeholder="Video URL - YouTube, .mp4, .webm, or .ogg"
+                    value={newsForm.video_url}
+                    onChange={e => setNewsForm({ ...newsForm, video_url: e.target.value })}
+                    className="input mb-4"
+                  />
+
                   <textarea
                     placeholder="Post Message"
                     value={newsForm.body}
@@ -633,6 +703,23 @@ export default function App() {
                           alt={post.title}
                           className="w-full h-64 object-cover"
                         />
+                      )}
+
+                      {post.video_url && (
+                        isDirectVideo(post.video_url) ? (
+                          <video
+                            controls
+                            src={post.video_url}
+                            className="w-full max-h-[500px] bg-black"
+                          />
+                        ) : (
+                          <iframe
+                            src={getYouTubeEmbed(post.video_url)}
+                            title={post.title}
+                            className="w-full h-80 bg-black"
+                            allowFullScreen
+                          />
+                        )
                       )}
 
                       <div className="p-6">
@@ -723,7 +810,7 @@ export default function App() {
             </>
           )}
 
-          {page === 'forms' && canAccessAdminPages() && (
+          {page === 'forms' && canAccessForms() && (
             <>
               <h2 className="text-4xl font-bold mb-4">Department Forms</h2>
 
