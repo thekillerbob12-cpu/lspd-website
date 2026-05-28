@@ -590,19 +590,148 @@ export default function App() {
             </>
           )}
 
-          {page === 'contact' && (
-            <>
-              <h2 className="text-4xl font-bold mb-4">Contact Us</h2>
-              <p className="text-gray-300 mb-6">
-                Contact command staff for questions, recruitment help, complaints, or department support.
-              </p>
+        {page === 'contact' && (
+  <>
+    <div className="relative overflow-hidden rounded-2xl border border-blue-900 mb-8">
+      <img
+        src="/patrol.jpg"
+        alt="Contact LSPD"
+        className="w-full h-72 object-cover opacity-75"
+      />
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card title="Discord" text="Replace this with your server invite or command staff contact." />
-                <Card title="Email" text="lspd@example.com" />
-              </div>
-            </>
-          )}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-[#020617]/75 to-transparent"></div>
+
+      <div className="absolute left-8 bottom-8 max-w-xl">
+        <p className="uppercase tracking-[5px] text-blue-300 text-sm mb-2">
+          Department Contact
+        </p>
+
+        <h2 className="text-5xl font-black mb-3">
+          Contact Us
+        </h2>
+
+        <p className="text-gray-300">
+          Reach command staff for recruitment questions, complaints,
+          partnerships, or general department support.
+        </p>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-3 gap-4 mb-8">
+      <ContactCard
+        icon={<MessageSquare size={24} />}
+        title="LSPD Discord"
+        text="Official Los Santos Police Department communications server."
+        detail="discord.gg/GznXtDbPqA"
+        link="https://discord.gg/GznXtDbPqA"
+      />
+
+      <ContactCard
+        icon={<Users size={24} />}
+        title="Royalty County Roleplay"
+        text="Official main community Discord server."
+        detail="discord.gg/RaERpXvuVH"
+        link="https://discord.gg/RaERpXvuVH"
+      />
+
+      <ContactCard
+        icon={<Clock size={24} />}
+        title="Response Time"
+        text="Command staff will respond as soon as available."
+        detail="Usually within 24-48 hours"
+      />
+    </div>
+
+    <div className="grid lg:grid-cols-[1fr_420px] gap-6">
+      <form
+        onSubmit={handleContactSubmit}
+        className="bg-[#0f172a] border border-blue-900 rounded-2xl p-6"
+      >
+        <h3 className="text-3xl font-bold mb-4">
+          Send a Message
+        </h3>
+
+        <p className="text-gray-400 mb-6">
+          Fill this out and your email client will open with the message prepared.
+        </p>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-4">
+          <input
+            value={contactForm.name}
+            onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+            placeholder="Your Name"
+            className="input"
+          />
+
+          <input
+            value={contactForm.contact}
+            onChange={e => setContactForm({ ...contactForm, contact: e.target.value })}
+            placeholder="Discord or Email"
+            className="input"
+          />
+        </div>
+
+        <select
+          value={contactForm.reason}
+          onChange={e => setContactForm({ ...contactForm, reason: e.target.value })}
+          className="input mb-4"
+        >
+          <option>General Question</option>
+          <option>Recruitment Question</option>
+          <option>Complaint</option>
+          <option>Partnership Request</option>
+          <option>Command Staff Contact</option>
+          <option>Website Issue</option>
+        </select>
+
+        <textarea
+          value={contactForm.message}
+          onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+          placeholder="Message"
+          className="input min-h-40 mb-4"
+        />
+
+        <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl">
+          <Send size={18} />
+          Prepare Email
+        </button>
+      </form>
+
+      <div className="bg-[#0f172a] border border-blue-900 rounded-2xl p-6 h-fit">
+        <h3 className="text-3xl font-bold mb-4">
+          Department Leadership
+        </h3>
+
+        <div className="space-y-4 text-gray-300">
+          <div className="border border-blue-900 rounded-xl p-4">
+            <p className="font-bold text-white">Chief of Police</p>
+            <p>Jack Malone</p>
+          </div>
+
+          <div className="border border-blue-900 rounded-xl p-4">
+            <p className="font-bold text-white">Assistant Chief</p>
+            <p>Ryan Parish</p>
+          </div>
+
+          <div className="border border-blue-900 rounded-xl p-4">
+            <p className="font-bold text-white">Deputy Chief</p>
+            <p>Ashley Alastor</p>
+          </div>
+
+          <div className="border border-blue-900 rounded-xl p-4">
+            <p className="font-bold text-white">Watch Commander</p>
+            <p>Alaina Alastor</p>
+          </div>
+
+          <div className="border border-blue-900 rounded-xl p-4">
+            <p className="font-bold text-white">Website Inquiries</p>
+            <p>Bryce Parish (spedsped.)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+)}
 
           {page === 'login' && (
             <>
@@ -859,6 +988,31 @@ function ImageCard({ image, title, text }) {
         <h3 className="text-2xl font-bold mb-2">{title}</h3>
         <p className="text-gray-400">{text}</p>
       </div>
+    </div>
+  )
+}
+
+function ContactCard({ icon, title, text, detail, link }) {
+  return (
+    <div className="bg-[#0f172a] border border-blue-900 rounded-2xl p-5">
+      <div className="text-blue-300 mb-4">{icon}</div>
+
+      <h3 className="text-2xl font-bold mb-2">{title}</h3>
+
+      <p className="text-gray-400 mb-4">{text}</p>
+
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer"
+          className="text-blue-300 font-semibold hover:text-blue-200 underline"
+        >
+          {detail}
+        </a>
+      ) : (
+        <p className="text-blue-300 font-semibold">{detail}</p>
+      )}
     </div>
   )
 }
